@@ -34,9 +34,6 @@ app.use(function(req, res, next) {
 })
 
 
-
-
-
 var Users=manager.Users
 var users= new Users()
 
@@ -62,9 +59,9 @@ passport.use(jwtStrategy)
 /**
  * récupérer un evenement à partir de son id
  */
-app.get('/getEvent',(req,res)=>{
-    let user=users.getUser(extractJWT(req))
-    let event=user.getEvent(req.query.id)
+app.post('/getEvent',(req,res)=>{
+    let user=users.getUser(req.body.jwt)
+    let event=user.getEvent(req.body.id)
     res.send(event)
 })
 
@@ -75,7 +72,6 @@ app.post('/getEventsList',urlEncodedParser,(req,res)=>{
     let token=req.body.jwt;
     let user=users.getUser(token)   
     let events=user.getAllEvents()
-    console.log(events)
     res.send(events)
 })
 
@@ -98,13 +94,7 @@ app.post('/deleteEvent',(req,res)=>{
     res.send(answer)
 })
 
-/**
- * extrait le jwt de la requete
- * @param {requete} req 
- */
-function extractJWT(req){
-    return req.cookies.jwt
-}
+
 
 /**
  * créer un compte
@@ -129,6 +119,12 @@ app.post('/login', urlEncodedParser, (req,res)=>{
         res.status(401).json({error:"Login ou mot de passe invalide"})
     }
     else{
+    let infos=jwt.verify(token,secret);
+    let verif=identification(customer,infos);
+        if(!verif){
+            res.status(401).json({error:"Login ou mot de passe invalide"});
+        }
+    
         req.session.name='session-calendar';
         req.session.user=customer;
         req.session.jwt=token;
@@ -138,33 +134,20 @@ app.post('/login', urlEncodedParser, (req,res)=>{
     } 
 })
   
-app.get('/private', passport.authenticate('jwt', { session: true }), (req, res) => {    
-   res.send('hello')
-})
 
 app.listen(3000, function() {
     console.log('Example app listening on port 3000!')
   })
 
-app.get('/users',(req,res)=>{  
-    res.send(users)
-})
 
-function identification(req){
-    const email = req.body.email
-    const password = req.body.password   
-    if (!email || !password) {        
-        return { error: 'Email or password was not provided.'}
+function identification(user,info){
+    if(user.email===info.email&&user.password===info.password){
+        return true;
     }
-    // this is usually a database call instead of a find in an array
-    const user = users.listUser.find(user => user.email === email)
-    if (!user || user.password !== password) {
-        return { error: 'Email / password do not match.'}
+    else{
+        return false;
     }
-    const userJwt = jwt.sign({
-         email: user.email,
-         password: user.password },secret);
-    return userJwt;
+    
  }
 
 
