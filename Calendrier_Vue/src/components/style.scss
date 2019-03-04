@@ -1,0 +1,62 @@
+.calendarVue * {
+    box-sizing: border-box;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+.calendarVue{
+    display: flex;
+    flex-wrap: wrap;
+}
+.calendarVue_month{
+    width: 25%;
+    background-color:rgb(215, 228, 245);
+    border: solid 1px darkblue;
+   
+}
+
+.calendarVue_monthName{
+    height: 64px;
+    line-height: 64px;
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 1rem;
+    background-color: darkslateblue;
+    color:ghostwhite;
+    
+}
+
+.calendarVue_daysNames{
+    height: 35px;
+    color: gray;
+    font-size: 1rem;
+    background-color: aliceblue;
+    border: solid 0.5px darkblue;
+    display: flex;
+    font-weight: bold;
+    align-items: center;
+    text-align: center;
+    justify-content: space-evenly;
+}
+
+.calendarVue_daysNumber{
+    display: flex;
+    flex-wrap: wrap; 
+    font-size: 1rem;
+    line-height: 20px;
+    text-align: center;
+    justify-content: space-evenly;
+}
+
+.calendarVue_day{
+    width: 14%;
+}
+
+.calendarVue_day:hover{
+    background-color: blue;
+    color: white;
+}
+
+.calendarVue_dayOut{
+    opacity: 0.5;
+}
+

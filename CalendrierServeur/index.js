@@ -17,6 +17,24 @@ const manager = require('./Manager')
 var cookieParser = require('cookie-parser')
 app.options('*', cors())
 app.use(cookieParser())
+let optionSession={
+    name: 'session-calendar',
+    secret:'thisismysecret',
+    cookie: {
+        secure:false,
+        httpOnly:false
+    },
+    User:{}
+}
+app.use(session(optionSession))
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    next();
+})
+
+
+
 
 
 var Users=manager.Users
@@ -41,13 +59,6 @@ const jwtStrategy=new JwtStrategy(opts,function(payLoad,next){
 passport.use(jwtStrategy)
 
 
-
-app.get('/', function(req, res) {
-  res.send('Hello World!')
-})
-
-
-
 /**
  * récupérer un evenement à partir de son id
  */
@@ -60,26 +71,29 @@ app.get('/getEvent',(req,res)=>{
 /**
  * recupérer la liste des evenements d'un utilisateur
  */
-app.get('/getEventsList',(req,res)=>{
-    let user=users.getUser(extractJWT(req))
+app.post('/getEventsList',urlEncodedParser,(req,res)=>{
+    let token=req.body.jwt;
+    let user=users.getUser(token)   
     let events=user.getAllEvents()
+    console.log(events)
     res.send(events)
 })
 
 /**
- *ajoute un evenement 
+ * ajoute un evenement 
  */
 app.post('/addEvent',urlEncodedParser,(req,res)=>{
-    let user=users.getUser(extractJWT(req))
+    let token=req.body.jwt;
+    let user=users.getUser(token)
     let titre=req.body.titre
     let date=req.body.date
     let answer=user.addEvent(titre,date)
     res.send(answer)
 })
 
-app.get('/deleteEvent',(req,res)=>{
-    let user=users.getUser(extractJWT(req))
-    let id=parseInt(req.query.id)
+app.post('/deleteEvent',(req,res)=>{
+    let user=users.getUser(req.body.jwt)
+    let id=parseInt(req.body.id)
     let answer=user.deleteEvent(id)
     res.send(answer)
 })
@@ -96,7 +110,7 @@ function extractJWT(req){
  * créer un compte
  * 
  */
-app.post('/createCompte',urlEncodedParser,(req,res)=>{
+app.post('/createCompte',urlEncodedParser,(req,res)=>{  
     let nom=req.body.nom
     let prenom=req.body.prenom
     let email=req.body.email
@@ -109,36 +123,24 @@ app.post('/createCompte',urlEncodedParser,(req,res)=>{
  * authentification
  */
 app.post('/login', urlEncodedParser, (req,res)=>{
-    let jwt=identification(req)
-
-    if(jwt.error){
-        res.status(401).json(jwt)
+    let token=req.body.token;
+    let customer=users.getUser(token);
+    if(customer==undefined){
+        res.status(401).json({error:"Login ou mot de passe invalide"})
     }
-    res.cookie('jwt',jwt.jwt)   
-    res.send({res:'Connexion accepté',jwt})
-    
-})
-
-
-
-app.get('/public', (req, res) => {
-    res.send('I am public folks!')
- })
-
-
-  
-app.get('/user',(req,res)=>{
-      res.send('molina')
+    else{
+        req.session.name='session-calendar';
+        req.session.user=customer;
+        req.session.jwt=token;
+        req.session.cookie.jwt=token
+        res.cookie('jwt',token)
+        res.send(req.session)   
+    } 
 })
   
-app.get('/private', passport.authenticate('jwt', { session: false }), (req, res) => {    
+app.get('/private', passport.authenticate('jwt', { session: true }), (req, res) => {    
    res.send('hello')
 })
-  
-
-
-
-
 
 app.listen(3000, function() {
     console.log('Example app listening on port 3000!')
@@ -147,10 +149,6 @@ app.listen(3000, function() {
 app.get('/users',(req,res)=>{  
     res.send(users)
 })
-
-
-
-
 
 function identification(req){
     const email = req.body.email
@@ -162,11 +160,11 @@ function identification(req){
     const user = users.listUser.find(user => user.email === email)
     if (!user || user.password !== password) {
         return { error: 'Email / password do not match.'}
-    }   
+    }
     const userJwt = jwt.sign({
          email: user.email,
-         password: user.password }, secret)    
-    return { jwt: userJwt }
+         password: user.password },secret);
+    return userJwt;
  }
 
 
